@@ -37,3 +37,19 @@
  4. world model 是否是在baseline 的基础上完成的？world model 中对环境的包装同样是基于baseline中的，只不过是换了个名字 gym_utils.py 所以我们重点不是去构造那个函数，而是使用这个包装。
 
  5. 现在的任务是尝试根据这两个（baseline 和 world model ）的应用，总结Atari环境的使用方法。先把一个随机动作的测试文件跑起来。据说没有可视化的环境包装。
+
+ 6. 例子在openai中有最简单版本,从官网上找到的例子比较靠谱，testenvs()中定义了一个随机的探索方案，这里可以看到有视频帧作为观测的游戏可以用，那么接下来看看两个算法是如何处理和包装这个环境的。
+    
+    + baselines 中common 文件夹中的cmd_util.py包装参数，wrappers.py包装环境, 这里好像默认使用的是mpi,但是不知道具体有什么用途。可以用 make_atari包装，也可以再包装一层wrap_deepmind 都在atari_wrappers.py中。
+    + 环境要用
+        python testforAtari.py--env=MsPacmanNoFrameskip-v0
+    + 仍然没有搞懂多进程如何封装环境
+
+7. 接下来试试t2t中的环境如何封装
+    + 基本流程：从trainer_model_based.py中开始,环境设置在rl_utils.setup_env（），然后再每个epoch中先train_world_model()，然后train_agent()环境是world model， 之后train_agent_real_env(),最后再env.generate_data()
+        + setup_env() 中主要函数是T2TGymEnv(): from tensor2tensor.data_generators.gym_env import T2TGymEnv 重新封装了一个环境，这个环境的测试在gym_env_test.py中
+        + train_world_model()中以train_supervised（）为主，再下一级是trainer_lib.create_experiment_fn和 trainer_lib.create_run_config
+        + 同样trainer lib 中也有相应的test文件，其实这个习惯很好，每写完一个就写一个test.py 这里似乎是在构造一个分布式训练的平台
+        + train agent() 是一个在虚拟环境中训练智能体的网络
+        + train agent real env() 是在实际环境中训练，
+        + 两个训练训练用的是同一函数train()，参数simulated 不同，一个True 一个False. 这个训练器在rl.dopamine_connector.py中。y有空看看这个train是怎么写出来的。
