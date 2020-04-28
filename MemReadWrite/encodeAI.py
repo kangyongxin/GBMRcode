@@ -9,6 +9,7 @@ import random
 import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.layers as layers
+import tmemory as memory_module
 
 
 #这里有两种类型的编码器，暂时使用第二种，20200401
@@ -72,7 +73,7 @@ class Sampling(layers.Layer):
         dim = tf.shape(z_mean)[1]
         epsilon = tf.keras.backend.random_normal(shape=(batch, dim))
         return z_mean + tf.exp(0.5*z_log_var) * epsilon
-# 编码器
+# 2.1 编码器
 class Encoder(layers.Layer):
     def __init__(self, latent_dim=32, 
                 intermediate_dim=64, name='encoder', **kwargs):
@@ -89,7 +90,7 @@ class Encoder(layers.Layer):
         z = self.sampling((z_mean, z_log_var))
         return z_mean, z_log_var, z
         
-# 解码器
+# 2.2 解码器
 class Decoder(layers.Layer):
     def __init__(self, original_dim, 
                  intermediate_dim=64, name='decoder', **kwargs):
@@ -100,7 +101,7 @@ class Decoder(layers.Layer):
         h1 = self.dense_proj(inputs)
         return self.dense_output(h1)
     
-# 变分自编码器
+# 2.3 变分自编码器
 class VAE(tf.keras.Model):
     def __init__(self, original_dim, latent_dim=32, 
                 intermediate_dim=64, name='encoder', **kwargs):
@@ -120,7 +121,7 @@ class VAE(tf.keras.Model):
         self.add_loss(kl_loss)
         return reconstructed
 
-# 编码并输出
+# 2.4 编码并输出
 class ImEncoder(tf.keras.Model):
     def __init__(self,original_dim,latent_dim=32,intermediate_dim=64,name='ImEncoder',**kwargs):
         super(ImEncoder,self).__init__(name=name,**kwargs)
@@ -132,6 +133,35 @@ class ImEncoder(tf.keras.Model):
     def call(self,inputs):
         z_mean,z_log_var,z = self.encoder(inputs)
         return z
+
+class _GraphCore(layers.Layer):
+    def __init__(self,num_actions,with_memory=True,name='GraphCore',**kwargs):
+        super(_GraphCore,self).__init__(name=name,**kwargs)
+        num_latents = 32# 200#这个是最后编码的长度，（我们之前给编码到32）
+        self._with_memory = with_memory
+        memory_size = 1000#存储个数
+        memory_num_reads = 3
+        memory_top_k = 50
+
+        memory_dim = num_latents
+        self._mem_shape = (memory_size,memory_dim)
+        self._memory_reader = memory_module.MemoryReader(
+            memory_word_size=memory_dim,
+            num_read_heads=memory_num_reads,
+            top_k=memory_top_k,
+            memory_size=memory_size)
+
+        self._memory_writer = memory_module.MemoryWriter(
+            mem_shape=self._mem_shape)
+
+        mem_reads_size, read_info_size = self._memory_reader.output_size
+        mem_writer_state_size = self._memory_writer.state_size
+
+    def call(self,state):
+        mem_reads, read_info = self._memory_reader((controller_out,
+                                                  h_prev.memory))
+        memory, h_mem_writer = self._memory_writer((z, h_prev.memory),
+                                                 h_prev.h_mem_writer)
 
 class Agent():
     def __init__(self,num_actions=None,image_code_size=500,obs_size=75,latent_dim=32,name='encode_agent',**kwargs):
@@ -159,8 +189,15 @@ class Agent():
     def step(self,observation):
         with tf.name_scope(self._name + '/step'):
             state = self.obs2state(observation)
-        
         return state
 
     def recon_loss(self,observation,image_recon):
         pass
+    
+    def infer(self,state,reward):
+        #这里接收state,reward输入，要完成在记忆中的推理（包括记忆检索）
+        #现在只是输入，检索到最相似的几个，并原样输出
+        
+        
+        action= self.TakeRandomAction()
+        return action
