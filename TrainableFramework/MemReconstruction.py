@@ -14,16 +14,16 @@ class MemReconstructor():
 
     def reconstruct_by_abstract_graph(self,abstract_graph,external_graph):
         print("read in abstract graph :", abstract_graph.num_nodes_in_Mem())
-        print("replay external graph :",external_graph.num_edges_in_Mem())
+        print("replay external graph :",external_graph.num_nodes_in_Mem())
 
         for nodei in abstract_graph.Gmemory.nodes():
             for nodej in abstract_graph.Gmemory.nodes():
                 if nodei == nodej:
                     continue
                 if nx.algorithms.shortest_paths.generic.has_path(external_graph.Gmemory,nodei,nodej):#center_list[i],center_list[j]):
-                    print("reconstruct")
+                    #print("reconstruct")
                     path = nx.shortest_path(external_graph.Gmemory,nodei,nodej)
-                    print("path",path)
+                    #print("path",path)
                     temp = []
                     for idx in range(len(path)-1):
                         pair_start = path[idx]
@@ -37,7 +37,8 @@ class MemReconstructor():
                     #这里因为已知节点序号，所以可以直接写进内存
                     external_graph.seqwriter(temp)
                 else:
-                    print("no path for reconstruct")
+                    #print("no path for reconstruct")
+                    pass
         return True
 
 

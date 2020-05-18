@@ -1,6 +1,10 @@
-# 定义外部存储
-# 核心是一个有向图
+'''
+记忆存储模块
+# 定义存储器
+# 核心是一个有向图，对有向图进行一些包装，供其它函数使用
 # 这里要做到可读写
+所有读写内容均针对图完成，它是底层的数据结构，不能引入与智能体相关的内容
+'''
 
 import networkx as nx
 import numpy as np
@@ -47,6 +51,7 @@ class ExternalMemory:
         self.Gmemory.add_node(cur_node,feature=cur_state,reward=r)
 
     def update_edge(self,cur_node,act,reward,next_node):
+        #不能只遵循Q原则更新边
         old_rew = self.Gmemory[cur_node][next_node]['rew']
         old_visits = self.Gmemory[cur_node][next_node]['visits']
         old_q = self.Gmemory[cur_node][next_node]['q']
@@ -73,11 +78,11 @@ class ExternalMemory:
         
         #if [cur_node,next_node] in self.Gmemory.edges():
         if self.Gmemory.has_edge(cur_node,next_node):
-            print("update edge *****************************")
+            #print("update edge *****************************")
             self.update_edge(cur_node,act,r,next_node)
         else:
             #增加节点和边
-            print("add node")
+            #print("add node")
             if self.check_node_exist(cur_node):
                 if self.check_node_exist(next_node):
                     pass
@@ -106,15 +111,15 @@ class ExternalMemory:
         #由于没有找到直接读边的函数，这里先读下一个节点，然后再读边
         temp = self.Gmemory[read_node]
         next_node_candidates = list(temp)
-        print(next_node_candidates)
+        #print(next_node_candidates)
         action_candidates = []
         value_list = []
         for i in range(len(next_node_candidates)):
-            print("read node",read_node,"next_node ",i,"is ",next_node_candidates[i])
-            if self.Gmemory.has_edge(read_node,next_node_candidates[i]):
-                print("there is an edge")
-            else:
-                print("we have no edges here")
+            #print("read node",read_node,"next_node ",i,"is ",next_node_candidates[i])
+            # if self.Gmemory.has_edge(read_node,next_node_candidates[i]):
+            #     print("there is an edge")
+            # else:
+            #     print("we have no edges here")
             action_candidates.append(self.Gmemory[read_node][next_node_candidates[i]]['label'])
             value_list.append(self.Gmemory[read_node][next_node_candidates[i]]['q'])
         return action_candidates,value_list,next_node_candidates

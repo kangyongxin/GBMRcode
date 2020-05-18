@@ -1,9 +1,10 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 '''
-class 名称大写开头，示例化之后小写
+构建智能体类
+
+包含两个部分，一个是init 部分，对各个用到的模块进行实例化；
+另外一部分是功能函数的构建，根据我们实际交互的需求，用实例化之后的模块构建相应的功能；
+供交互过程调用。
+
 '''
 import EncoderDecoder
 import random
@@ -16,28 +17,36 @@ import MemReconstruction
 from functools import reduce
 
 class Agent():
-    def __init__(self,num_actions=None,dim_obs=None,memory_size=100,memory_word_size=32,name='encode_agent',**kwargs):
-        #super(Agent, self).__init__(name=name,**kwargs)#如果继承别人的才用
-        #latent dim 和 image_code_size是相同的含义，用在不同的编码器中
-        self.num_actions= num_actions
-        self.memory_size =memory_size
-        self.memory_word_size = memory_word_size
-        #self._image_code_size = image_code_size
-        #self._image_encoder_decoder = EncoderDecoder.ImageEncoderDecoder(image_code_size=image_code_size)
-        self._name = name
+    def __init__(self,num_actions=None,dim_obs=None,memory_size=100,memory_word_size=32,name="TrainableAgent"):
+        '''
+        智能体对环境的基本认知，动作空间，状态空间
+        '''
+        self.num_actions = num_actions
         self._obs_size = reduce(lambda x,y: x*y, list(dim_obs)) 
-        print("self.obs_size",self._obs_size)
+        self.memory_size = memory_size
+        self.memory_word_size=memory_word_size
+        '''
+        1.实例化各个类
+            五个模块的引入
+        '''
+        # 编解码器的实例化
         self._im2state = EncoderDecoder.ImEncoder(self._obs_size,self.memory_word_size,64)
         self._state2im = EncoderDecoder.ImDecoder(self._obs_size,self.memory_word_size,64)
         self._vae = EncoderDecoder.VAE(self._obs_size,self.memory_word_size,64)    
         self._optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
-        self._controllercore = Controller.ControllerCore(num_actions=self.num_actions,num_node=10,memory_size=self.memory_size,memory_word_size=self.memory_word_size)
+        self._vdecoder = EncoderDecoder.VDecoder(1,200)# 因为没用batch 所以是一维输出，就是一个v值
+        self._vaev = EncoderDecoder.VAEV(self._obs_size,self.memory_word_size,64)
+        # 控制器实例化
+        self._controllercore = Controller.ControllerCore(num_actions=self.num_actions,
+                                                        num_node=10,
+                                                        memory_size=self.memory_size,
+                                                        memory_word_size=self.memory_word_size)
         self._abstract_memory= self._controllercore.AbstractG
-        #这几个参数要改，因为要与图相关，这个只是矩阵相关
-        
-        #print("memory_size",self.memory_size)
         self._external_memory = Memory.ExternalMemory(memory_size=self.memory_size)
-        
+        self._aggregator = Controller.MeanAggregator(self.memory_word_size, self.memory_word_size, name="aggregator", concat=False)#输入输出维度相同
+
+
+        # 读写器实例化
         memory_num_reads = 2
         memory_top_k = 3
         self._memory_reader = MemReadWrite.MemReader(
@@ -46,23 +55,25 @@ class Agent():
             top_k=memory_top_k,
             memory_size=self.memory_size)
 
-        #
         self._memory_eraser =MemReadWrite.MemErase(
             memory_word_size=self.memory_word_size,
             memory_size=self.memory_size)
 
-
-
         self._memory_writer = MemReadWrite.MemWriter(            
             memory_word_size=self.memory_word_size,
-            memory_size=self.memory_size)
-
+            memory_size=self.memory_size)        
+        
+        #重构机制实例化
         self._memory_reconstructor = MemReconstruction.MemReconstructor(memory_word_size=self.memory_word_size)
-    
+        
+    '''
+    2.构建功能函数
+    '''
     def TakeRandomAction(self):
-        action = random.randint(0,self.num_actions-1) 
+        action = random.randint(0,self.num_actions-1)
         return action
 
+    # 编解码功能
     def obs2state(self,observation):
         obs = observation.reshape(1,self._obs_size).astype('float32') / 255 #这个应该放到函数里面
         obs_code = self._im2state(obs)
@@ -72,11 +83,11 @@ class Agent():
         reconstructed_obs = self._state2im(state)
         return reconstructed_obs
     
-    def vae_initial(self):
-        self._vae.compile(self._optimizer, loss=tf.keras.losses.MeanSquaredError())
+    def state2value(self,state):
+        value_estimate = self._vdecoder(state)
+        return value_estimate
 
-    def vae_train(self,input_train,epochs,batch_size):
-        self._vae.fit(input_train, input_train, epochs=1, batch_size=64)
+    # 轨迹记录 应该放在控制器中
 
     def EpsHistory_Initial(self):
         #目前是直接存储每个回合的数据，后续可以加入一个lstm的循环
@@ -88,7 +99,8 @@ class Agent():
         # 可以尝试对当前episode 的历史做深加工
         return self._epshistory
 
-    def infer(self, state, epshistory):
+    #前向推断
+    def infer(self,state,epshistory):
         '''
         功能：
         根据当前状态和本回合历史，从抽象图中查询相似与相关联的关键状态；（controller中完成）
@@ -115,8 +127,9 @@ class Agent():
                 action = self.TakeRandomAction()
 
         
-        return action,read_info
+        return action,read_info 
 
+    #记忆更新
     def Memory_update(self,epshistory):
         # 根据当前内存容量决定是否遗忘
         # 根据当前轨迹决定是否写入
@@ -131,8 +144,7 @@ class Agent():
         self._memory_writer.memory_writer(self._external_memory,epshistory)
 
 
-    
-
+    # 记忆抽象
     def Memory_abstract(self):
         #从记忆图，得到，抽象图，更新控制器的过程
         # 在memreconstruction.py,输入是外部存储，得到的是控制器中的内部存储
@@ -142,6 +154,7 @@ class Agent():
 
         return True
 
+    # 记忆重构
     def Memory_reconstruct(self):
         #根据抽象图来重新改变记忆的权值的过程。
         #输入是抽象图，或者待重构的起止点
@@ -151,3 +164,51 @@ class Agent():
         return True
 
 
+    # 参数训练
+    def NetInitialize(self):
+        #TODO:
+        #对各个待训练网络的参数进行初始化
+        self.vae_initial()
+
+    def train(self,input_train,epochs,batch_size):
+        #TODO:
+        #集合各个模块中出现的需要训练的参数
+        pass
+
+    def loss(self):
+        pass
+
+
+    def vae_initial(self):
+        self._vae.compile(self._optimizer, loss=tf.keras.losses.MeanSquaredError())
+    
+    def vaev_initial(self):
+        self._vaev.compile(self._optimizer,
+                            loss =[
+                                tf.keras.losses.MeanSquaredError(),
+                                tf.keras.losses.MeanSquaredError(),
+                            ],
+                            loss_weights=[1,0.2],
+                            )
+
+    def vae_train(self,input_train,epochs,batch_size):
+        self._vae.fit(input_train, input_train, epochs=1, batch_size=64)
+        self._vae.summary()
+
+
+
+    def vaev_train(self,input_train,rewards,epochs,batch_size):
+        #self._vaev.summary()
+        target1 = input_train
+        target2 = rewards
+        self._vaev.fit(
+            input_train, 
+            [target1,target2],
+             epochs=2, 
+             batch_size=64,)
+        self._vaev.summary()
+    
+    def train_agg(self,x,y):
+        #在init中已经将网络实例化了，如果有标签就能直接用了
+        self._aggregator.compile(self._optimizer, loss=tf.keras.losses.MeanSquaredError())
+        self._aggregator.fit(x, y, epochs=1, batch_size=64)
