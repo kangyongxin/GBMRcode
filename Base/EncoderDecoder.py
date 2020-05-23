@@ -117,14 +117,14 @@ class VAEV(tf.keras.Model):
                               intermediate_dim=intermediate_dim)
         self.vdecoder = VDecoder(1,200)
     def call(self, inputs):
-        #print("inputs size",K.shape(inputs))
+        print("inputs size",K.shape(inputs))
         z_mean, z_log_var, z = self.encoder(inputs)
         reconstructed = self.decoder(z)
         v_hat = self.vdecoder(z)
         
         kl_loss = -0.5*tf.reduce_sum(
             z_log_var-tf.square(z_mean)-tf.exp(z_log_var)+1)
-        self.add_loss(kl_loss) 
+        self.add_loss(kl_loss)
         # self.vaev = keras.Model(
         #     inputs  = inputs,
         #     outputs = [reconstructed,v_hat],

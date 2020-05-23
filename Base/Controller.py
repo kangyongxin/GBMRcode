@@ -225,12 +225,11 @@ class ControllerCore(layers.Layer):
         #先把所有的都算了，但是实际上我们可以选择每次只计算episode的个数那么多
         self_vec =Ememory.node_feature_list()# 所有节点特征向量，这个比较容易得到，另外如果各个函数中对它都有需求，我们能不能在写入记忆的时候就把它完成？
         Gnodes = [n for n in Ememory.Gmemory.nodes()]
-        print("+++++++++++++++++++++++++++++",Gnodes)
+        #print("+++++++++++++++++++++++++++++",Gnodes)
         pairs,feature_matrix = self.run_random_walks(Ememory.Gmemory,Gnodes,self.memory_word_size,3) # 为每个节点找到2跳邻居 5个， 用节点序号做标记
         neigh_vecs = tf.cast(feature_matrix,tf.float32)#列为节点个数，行为邻居个数，每个元素为一个向量
         # aggregator()只是一层前向构造，接下来要用得到的特征进行重新采样，比如pooling 或者进行聚类的方式实现
         #outputs = self.aggregator.aggwithoutpara(self_vec,neigh_vecs)
-
         # self_vec = tf.reduce_mean(self_vec, axis=1)
         # neigh_vecs = tf.reduce_mean(neigh_vecs, axis=1)
         outputs = self.aggregator(self_vec,neigh_vecs)

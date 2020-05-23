@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras.utils import plot_model
 
 with tf.device('/cpu:0'):
 
@@ -64,3 +65,4 @@ with tf.device('/cpu:0'):
         epochs=2,
         batch_size=32,
     )
+    plot_model(model,'model.png')

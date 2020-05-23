@@ -111,13 +111,12 @@ def main(_):
         agent.Memory_update(epshistory)
         agent.Memory_abstract()
         agent.Memory_reconstruct()
+
         # 训练参数
         observations = np.stack(observations)
         rewards = np.stack(rewards)
         input_train = observations.reshape(ep_length+1, observations.shape[1]*observations.shape[2]*observations.shape[3]).astype('float32') / 255     
         rewards = rewards.reshape(ep_length+1,1).astype('float32') / 255 
-        # print("input_train",input_train,"rewards",rewards)
-        # agent.vae_train(input_train, epochs=2, batch_size=64)
         agent.vaev_train(input_train,rewards,epochs =2, batch_size =64)
         agent.train_agg()
 

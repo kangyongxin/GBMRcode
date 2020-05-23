@@ -93,7 +93,6 @@ class Agent():
         return value_estimate
 
     # 轨迹记录 应该放在控制器中
-
     def EpsHistory_Initial(self):
         #目前是直接存储每个回合的数据，后续可以加入一个lstm的循环
         self._epshistory = []
@@ -155,7 +154,7 @@ class Agent():
         # 在memreconstruction.py,输入是外部存储，得到的是控制器中的内部存储
         self._abstract_memory=self._controllercore.build_abstract_graph(self._external_memory)
         # 
-        print("current abstract memory",self._abstract_memory.num_nodes_in_Mem())
+        #print("current abstract memory",self._abstract_memory.num_nodes_in_Mem())
 
         return True
 
@@ -170,6 +169,7 @@ class Agent():
 
 
     # 参数训练
+    
     def NetInitialize(self):
         #TODO:
         #对各个待训练网络的参数进行初始化
@@ -198,7 +198,7 @@ class Agent():
 
     def vae_train(self,input_train,epochs,batch_size):
         self._vae.fit(input_train, input_train, epochs=1, batch_size=64)
-        self._vae.summary()
+        #self._vae.summary()
 
 
 
