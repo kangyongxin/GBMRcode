@@ -1,0 +1,69 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 1 files
+Detected 0 issues that require attention
+--------------------------------------------------------------------------------
+================================================================================
+Detailed log follows:
+
+================================================================================
+--------------------------------------------------------------------------------
+Processing file 'A3C_discrete_action.py'
+ outputting to 'A3C_discrete_action_tf2.py'
+--------------------------------------------------------------------------------
+
+46:17: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+47:25: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+50:17: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+51:25: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+52:29: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+53:32: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+58:21: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+58:21: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+59:34: INFO: Added keywords to args of function 'tf.reduce_mean'
+61:21: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+61:21: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+62:31: INFO: Added keywords to args of function 'tf.reduce_sum'
+62:31: INFO: Renamed keyword argument for tf.reduce_sum from keep_dims to keepdims
+62:45: INFO: Renamed 'tf.log' to 'tf.math.log'
+64:31: INFO: Added keywords to args of function 'tf.reduce_sum'
+64:31: INFO: Renamed keyword argument for tf.reduce_sum from keep_dims to keepdims
+64:59: INFO: Renamed 'tf.log' to 'tf.math.log'
+67:34: INFO: Added keywords to args of function 'tf.reduce_mean'
+69:21: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+69:21: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+70:35: INFO: Added keywords to args of function 'tf.gradients'
+71:35: INFO: Added keywords to args of function 'tf.gradients'
+73:17: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+73:17: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+74:21: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+74:21: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+77:21: INFO: `name` passed to `name_scope`. Because you may be re-entering an existing scope, it is not safe to convert automatically,  the v2 name_scope does not support re-entering scopes by name.
+
+77:21: INFO: Renamed 'tf.name_scope' to 'tf.compat.v1.name_scope'
+82:17: INFO: tf.random_normal_initializer requires manual check. Initializers no longer have the dtype argument in the constructor or partition_info argument in the __call__ method.
+The calls have been converted to compat.v1 for safety (even though they may already have been correct).
+82:17: INFO: Renamed 'tf.random_normal_initializer' to 'tf.compat.v1.random_normal_initializer'
+83:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+84:18: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+85:21: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+86:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+87:18: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+88:16: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+89:19: INFO: Renamed 'tf.get_collection' to 'tf.compat.v1.get_collection'
+89:37: INFO: Renamed 'tf.GraphKeys' to 'tf.compat.v1.GraphKeys'
+90:19: INFO: Renamed 'tf.get_collection' to 'tf.compat.v1.get_collection'
+90:37: INFO: Renamed 'tf.GraphKeys' to 'tf.compat.v1.GraphKeys'
+168:11: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+171:16: INFO: Renamed 'tf.train.RMSPropOptimizer' to 'tf.compat.v1.train.RMSPropOptimizer'
+172:16: INFO: Renamed 'tf.train.RMSPropOptimizer' to 'tf.compat.v1.train.RMSPropOptimizer'
+181:13: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+186:8: INFO: tf.summary.FileWriter requires manual check. The TF 1.x summary API cannot be automatically migrated to TF 2.0, so symbols have been converted to tf.compat.v1.summary.* and must be migrated manually. Typical usage will only require changes to the summary writing logic, not to individual calls like scalar(). For examples of the new summary API, see the Effective TF 2.0 migration document or check the TF 2.0 TensorBoard tutorials.
+186:8: INFO: Renamed 'tf.summary.FileWriter' to 'tf.compat.v1.summary.FileWriter'
+--------------------------------------------------------------------------------
+

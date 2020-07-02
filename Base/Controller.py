@@ -14,6 +14,9 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.layers as layers
+#import tensorflow.keras.layers as kl
+import tensorflow.keras.losses as kls
+import tensorflow.keras.optimizers as ko
 import networkx as nx
 import Memory
 import utils
@@ -152,6 +155,69 @@ class AggModel(tf.keras.Model):
         print("losses",K.shape(losses))
         return losses
 
+
+class ProbabilityDistribution(tf.keras.Model):
+
+    def call(self, logits):
+
+        # sample a random categorical action from given logits
+
+        return tf.squeeze(tf.random.categorical(logits, 1), axis=-1)
+
+
+class a2cModel(tf.keras.Model):
+
+    def __init__(self, num_actions):
+
+        super().__init__('mlp_policy')
+
+        # no tf.get_variable(), just simple Keras API
+
+        self.hidden1 = layers.Dense(128, activation='relu')
+
+        self.hidden2 = layers.Dense(128, activation='relu')
+
+        self.value = layers.Dense(1, name='value')
+
+        # logits are unnormalized log probabilities
+
+        self.logits = layers.Dense(num_actions, name='policy_logits')
+
+        self.dist = ProbabilityDistribution()
+
+
+
+    def call(self, inputs):
+
+        # inputs is a numpy array, convert to Tensor
+
+        x = tf.convert_to_tensor(inputs)
+
+        # separate hidden layers from the same input tensor
+
+        hidden_logs = self.hidden1(x)
+
+        hidden_vals = self.hidden2(x)
+
+        return self.logits(hidden_logs), self.value(hidden_vals)
+
+
+
+    def action_value(self, obs):
+
+        # executes call() under the hood
+
+        logits, value = self.predict(obs)
+
+        action = self.dist.predict(logits)
+
+        # a simpler option, will become clear later why we don't use it
+
+        # action = tf.random.categorical(logits, 1)
+
+        return np.squeeze(action, axis=-1), np.squeeze(value, axis=-1)
+
+
 class ControllerCore(layers.Layer):
     def __init__(self,num_actions=4,num_node=10,memory_size=100,memory_word_size=32,name='ControllerCore'):
         # 外部存储的结构概览
@@ -255,7 +321,7 @@ class ControllerCore(layers.Layer):
 
         return read_info
 
-    def policynet(self,mem_reads):
+    def policynet(self,state,mem_reads):
         # 根据读取到的量来生成策略
         # 不一定是训练的网络,所以用net 是不是不太合适
         action_candidates= mem_reads
@@ -267,4 +333,10 @@ class ControllerCore(layers.Layer):
                 action = np.random.choice(list(range(self.num_actions))) 
         else:
             action = np.random.choice(list(range(self.num_actions)))      
+        return action
+
+    def policyModelfree(self,state):
+        # 根据状态输出动作
+
+        action = np.random.choice(list(range(self.num_actions)))      
         return action

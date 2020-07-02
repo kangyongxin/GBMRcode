@@ -8,6 +8,7 @@
 '''
 import tensorflow as tf
 
+
 _EPSILON = 1e-6
 
 def _vector_norms(m):
@@ -50,6 +51,5 @@ class CosineSimilarity():
             # Calculates cosine similarity between the query vector and words in memory.
             similarity.append(dot / (norm + _EPSILON))
         return similarity
-
 
         

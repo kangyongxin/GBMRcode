@@ -14,7 +14,7 @@ import GBMRagent
 import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.layers as layers
-
+import matplotlib.pyplot as plt
 
 '''
 超参数读入：环境相关，流程相关，智能体相关
@@ -79,7 +79,7 @@ def main(_):
     agent.vaev_initial()
 
     ith_episode = 0 
-    
+    reward2step =[]
     while True:
         # 开始新的episode
         ith_episode += 1
@@ -101,13 +101,16 @@ def main(_):
             action, readinfo = agent.infer(state,epshistory)
             observation_, reward = env.step(action)
             state_ = agent.obs2state(observation_)
+            print("--------------++++++++++++++++++,state",state)
             epshistory = agent.EpsHistory_add([state,action,reward,state_])
             observation= observation_
             state= state_
             observations.append(observation)
             rewards.append(reward)
+            reward2step.append(reward)
 
         # 记忆重构
+        print("-----------",epshistory)
         agent.Memory_update(epshistory)
         agent.Memory_abstract()
         agent.Memory_reconstruct()
@@ -119,7 +122,10 @@ def main(_):
         rewards = rewards.reshape(ep_length+1,1).astype('float32') / 255 
         agent.vaev_train(input_train,rewards,epochs =2, batch_size =64)
         agent.train_agg()
+        if len(reward2step)%100==0:
+            print("write current data",len(reward2step))
+            np.save("rewstep.npy",reward2step)
 
 if __name__ == '__main__':
-  with tf.device('/cpu:0'):
+  with tf.device('/gpu:0'):
     app.run(main)

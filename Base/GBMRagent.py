@@ -17,6 +17,11 @@ import MemReconstruction
 from functools import reduce
 import numpy as np
 from tensorflow.keras import backend as K
+#import tensorflow.keras.layers as kl
+import tensorflow.keras.losses as kls
+import tensorflow.keras.optimizers as ko
+
+from Policynet import AC
 
 class Agent():
     def __init__(self,num_actions=None,dim_obs=None,memory_size=100,memory_word_size=32,name="TrainableAgent"):
@@ -24,6 +29,7 @@ class Agent():
         智能体对环境的基本认知，动作空间，状态空间
         '''
         self.num_actions = num_actions
+        # reduce (lambda x,y:x+y, [1,2,3]) 输出为 6
         self._obs_size = reduce(lambda x,y: x*y, list(dim_obs)) 
         self.memory_size = memory_size
         self.memory_word_size=memory_word_size
@@ -47,6 +53,18 @@ class Agent():
         self._aggregator = Controller.MeanAggregator(self.memory_word_size, self.memory_word_size, name="aggregator", concat=False)#输入输出维度相同
         self._aggmodel = Controller.AggModel(self.memory_word_size)
         self.batch_num =0 # 用来控制训练agg的batch起点，训练聚合器参数的时候用到
+        #这一版的a2c写的不够清晰
+        # self.a2cparams = {
+        #     'gamma': 0.99,
+        #     'value': 0.5,
+        #     'entropy':0.0001
+        # }
+        # self.a2cmodel = Controller.a2cModel(num_actions=self.num_actions)
+        # self.a2cmodel.compile(
+        #     optimizer = ko.RMSprop(lr=0.0007),
+        #     loss = [self._logits_loss,self._value_loss]
+        # )
+        self.a2cmodel = AC(self._obs_size,self.num_actions)
         # 存储器实例化
         self._abstract_memory= self._controllercore.AbstractG
         self._external_memory = Memory.ExternalMemory(memory_size=self.memory_size)
@@ -126,13 +144,17 @@ class Agent():
             read_info = self._controllercore.create_read_info(state,epshistory)#这个是从控制器中得到相应的读写索引
             if read_info:
                 mem_reads = self._memory_reader.read_from_memory(read_info,self._external_memory)#而这个是根据读写索引从外存中得到候选策略
-                action = self._controllercore.policynet(mem_reads)
+                action = self._controllercore.policynet(state,mem_reads)
             else:
                 action = self.TakeRandomAction()
 
         
         return action,read_info 
 
+    def inferModelfree(self,state):
+        action = self._controllercore.policyModelfree(state)
+        return action
+    
     #记忆更新
     def Memory_update(self,epshistory):
         # 根据当前内存容量决定是否遗忘
@@ -287,3 +309,39 @@ class Agent():
         # self._aggregator.compile(self._optimizer, loss=lambda y_true,y_pred: y_pred)
         # self._aggregator.fit([inputs1,neigh_vecs1,inputs2,neigh_vecs2], y, epochs=1, batch_size=64)
         self._aggmodel.summary()
+    
+    
+    def _returns_advantages(self, rewards, dones, values, next_value):
+        # next_value is the bootstrap value estimate of a future state (the critic)
+        returns = np.append(np.zeros_like(rewards), next_value, axis=-1)
+        # returns are calculated as discounted sum of future rewards
+        for t in reversed(range(rewards.shape[0])):
+            returns[t] = rewards[t] + self.a2cparams['gamma'] * returns[t+1] * (1-dones[t])
+            #returns[t] = rewards[t] + self.a2cparams['gamma'] * returns[t+1] 
+        returns = returns[:-1]
+        # advantages are returns - baseline, value estimates in our case
+        advantages = returns - values
+        return returns, advantages
+
+    
+
+    def _value_loss(self, returns, value):
+        # value loss is typically MSE between value estimates and returns
+        return self.a2cparams['value']*kls.mean_squared_error(returns, value)
+
+
+
+    def _logits_loss(self, acts_and_advs, logits):
+        # a trick to input actions and advantages through same API
+        actions, advantages = tf.split(acts_and_advs, 2, axis=-1)
+        # sparse categorical CE loss obj that supports sample_weight arg on call()
+        # from_logits argument ensures transformation into normalized probabilities
+        weighted_sparse_ce = kls.SparseCategoricalCrossentropy(from_logits=True)
+        # policy loss is defined by policy gradients, weighted by advantages
+        # note: we only calculate the loss on the actions we've actually taken
+        actions = tf.cast(actions, tf.int32)
+        policy_loss = weighted_sparse_ce(actions, logits, sample_weight=advantages)
+        # entropy loss can be calculated via CE over itself
+        entropy_loss = kls.categorical_crossentropy(logits, logits, from_logits=True)
+        # here signs are flipped because optimizer minimizes
+        return policy_loss - self.a2cparams['entropy']*entropy_loss
