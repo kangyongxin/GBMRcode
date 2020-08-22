@@ -312,7 +312,54 @@ local net 要各自训练
 ps: 如果我们用onehot形式作为actor的输出，那么我们就应该尝试用其它形式的loss
 
 
+目前 A3C_discrete_action_tf2_mspacman.py可以进行训练，但是通常会陷入起点附近的某个局部解当中。
+
+# dqn :
+基本操作：/data/kyx_data/GBMRcode/Base
 
 
+python DQN_atari_para.py --path_name './results/2' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.9 --replace_target_iter 300 --memory_size 2000 --batch_size 256 --max_step 1000 
 
-    
+python DQN_atari_para.py --path_name './results/2' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.9 --replace_target_iter 300 --memory_size 2000 --batch_size 256 --max_step 1000 --display
+
+## 试几组不同的e_greedy 看看对结果是否有影响，
+
+python DQN_atari_para.py --path_name './results/e9r300b256' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.9 --replace_target_iter 300 --memory_size 2000 --batch_size 256 --max_step 1000
+
+python DQN_atari_para.py --path_name './results/e8r300b256' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.8 --replace_target_iter 300 --memory_size 2000 --batch_size 256 --max_step 1000
+
+python DQN_atari_para.py --path_name './results/e95r300b256' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.95 --replace_target_iter 300 --memory_size 2000 --batch_size 256 --max_step 1000
+
+## 试几组不同的替代率
+
+python DQN_atari_para.py --path_name './results/e9r100b256' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.9 --replace_target_iter 100 --memory_size 2000 --batch_size 256 --max_step 1000
+
+python DQN_atari_para.py --path_name './results/e9r500b256' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.9 --replace_target_iter 500 --memory_size 2000 --batch_size 256 --max_step 1000
+
+python DQN_atari_para.py --path_name './results/e9r1000b256' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.9 --replace_target_iter 1000 --memory_size 2000 --batch_size 256 --max_step 1000
+
+## 试几组不同的batchsize
+
+python DQN_atari_para.py --path_name './results/e9r300b64' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.9 --replace_target_iter 300 --memory_size 2000 --batch_size 64 --max_step 1000
+
+python DQN_atari_para.py --path_name './results/e9r300b512' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.9 --replace_target_iter 300 --memory_size 2000 --batch_size 512 --max_step 1000
+
+## 不同的 memorysize
+
+python DQN_atari_para.py --path_name './results/e9r300b256m5000' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.9 --replace_target_iter 300 --memory_size 5000 --batch_size 256 --max_step 1000
+
+python DQN_atari_para.py --path_name './results/e95r1000b256m5000' --env_name 'MsPacman-ram-v0' --learning_rate 0.01 --reward_decay 0.9 --e_greedy 0.95 --replace_target_iter 1000 --memory_size 5000 --batch_size 256 --max_step 1000
+
+看了论文中的结果一般是在100-200million frames， 每个回合1000frames大约要100，000个回合之后才能收敛，感觉我们的维度过小，不一定学得到东西。按这种每天两千个episode 的速度要搞5天，能不能加速呢，或者多组一起跑？
+用tmux 也只能每次新开一个
+
+
+# PER 
+
+在DQN的基础上完成，先比较一下二者的不同，理论上在主循环中是没有区别的.
+区别出现在存储的时候，我们要多存一个td error, 并根据td error 维护一个SUMTREE.
+另外在训练之前得到样本的时候要按照PER的方法进行采样。
+
+1. 为了存储带优先级的点对，所以额外构造了一个记忆模块来替换掉原先的记忆矩阵。（从这里开始要尝试向自己已有的GBMR代码靠近）但是在存的时候好像没有写tderro
+
+2. 采样，？？
