@@ -13,7 +13,7 @@ import gym
 from functools import reduce
 import matplotlib.pyplot as plt
 
-from maze.maze_env20 import Maze
+#from maze.maze_env20 import Maze
 import GBMRAgent
 
 FLAGS = flags.FLAGS
@@ -46,7 +46,7 @@ def main(_):
         env = gym.make(FLAGS.env_name)
         num_actions = env.action_space.n
         observation = env.reset()
-        print(observation)
+        #print(observation)
         shape_obs = observation.shape
         dim_obs = reduce(lambda x,y: x*y, list(shape_obs)) 
     if FLAGS.print_functionname == True:
@@ -60,20 +60,22 @@ def main(_):
         step =0
         while step<ep_length:
             step += 1
-            state = agent.obs2state(observation)
-            action = agent.TakeRandomAction()
+            #state = agent.obs2state(observation)
+            state = agent.obs_ram(observation)
+            print(state)
+            action = 4#agent.TakeRandomAction()
             observation_, reward,done,info = env.step(action)
-            state_ = agent.obs2state(observation_)
+            state_ = agent.obs_ram(observation_)
             env.render()
             observation= observation_
             agent.ExternalMemory.pairwriter([state,action,reward,state_])
             if done:
-                print("done !",reward)
-                break       
+                print("done !",reward)      
                 plt.figure(eps)
                 agent.ExternalMemory.plotMemory()
                 plt.savefig(SAVEPATH+str(eps)+'.png')
-                plt.close()
+                plt.close(eps)
+                break 
     
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ class Memory:
         self.memory_word_size = memory_word_size
         self.gamma = 0.9
         self.lr = 0.01   
-        self.Gmemory.add_node(0,feature=[1,2,3])     
+             
         self._write_content_similarity = utils.CosineSimilarity(1,self.memory_word_size,name="write_content_similarity")
         self._TH = 0.99
 
@@ -31,6 +31,7 @@ class Memory:
 
         
     def _get_location(self,cur_state,next_state):
+        
         if self.Gmemory.number_of_nodes() == 0:
             print("an empty memory graph")
             cur_node = 0
