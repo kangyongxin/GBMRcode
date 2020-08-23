@@ -35,6 +35,8 @@ Base_ram 中的run_MsPacman_ram.py 及 readme.md .
 
     + 把read write 的功能集合到memory 中，其中有一个相似度比较来确定是哪个点的环节，暂时还不能省掉，而且是后续的一个重要的拓展点
     + 先把轨迹写进图中，然后再尝试可视化出来
+'xvfb-run -s "-screen 0 1400x900x24" 
 
+python run_videogame.py --env_name='MsPacman-ram-v4' --num_episode=3 --episode_length=1000
 
 + 主要区别是pooling 换成了聚类
